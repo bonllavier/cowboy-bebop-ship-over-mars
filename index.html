@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090206" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="author" content="hav_bs0lll" />
+    <meta
+      name="description"
+      content="An audiovisual experience inspired by Cowboy Bebop: join the Bebop on a cinematic flight over Mars, built in Three.js with procedural terrain, fog, and particles."
+    />
+    <meta
+      name="keywords"
+      content="Cowboy Bebop, Bebop, Mars, Three.js, WebGL, space anime, audiovisual experience, 3D animation"
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Bebop Mars Flight" />
+    <meta property="og:title" content="Bebop over Mars | Three.js Audiovisual Experience" />
+    <meta
+      property="og:description"
+      content="A cinematic flight over Mars featuring procedural terrain, atmospheric fog, particles, and music."
+    />
+    <meta property="og:image" content="./assets/icons/icon-512.png?v=2" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Stylized portrait of Spike Spiegel in front of an orange circle" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Bebop over Mars" />
+    <meta
+      name="twitter:description"
+      content="A space-themed audiovisual experience created with Three.js."
+    />
+    <meta name="twitter:image" content="./assets/icons/icon-512.png?v=2" />
+
+    <title>Bebop over Mars | Yesterday | hav_bs0lll | Three.js</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/icon-32.png?v=2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/icons/icon-192.png?v=2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/icon-180.png?v=2" />
+    <link rel="manifest" href="./site.webmanifest" />
+
+    <link rel="stylesheet" href="./styles.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        "name": "Bebop over Mars",
+        "description": "An interactive audiovisual experience featuring a spaceship flying over a procedural Martian landscape.",
+        "inLanguage": "en",
+        "genre": ["Science Fiction", "3D Animation", "Digital Art"],
+        "author": {
+          "@type": "Person",
+          "name": "hav_bs0lll"
+        },
+        "isAccessibleForFree": true
+      }
+    </script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.178.0/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="app" aria-label="Animation of the Bebop flying over Mars">
+      <div id="atmosphere" aria-hidden="true"></div>
+      <canvas id="scene" aria-label="Bebop over Mars scene"></canvas>
+      <div id="vignette" aria-hidden="true"></div>
+
+      <div id="loading" role="status" aria-live="polite">
+        <span class="loading-dot"></span>
+        <span>Preparing flight over Mars</span>
+      </div>
+
+      <aside id="youtube-player" aria-label="Music player">
+        <iframe
+          id="main-youtube-player"
+          src="https://www.youtube-nocookie.com/embed/nCGNJgpiRQA?rel=0&modestbranding=1&enablejsapi=1&playsinline=1"
+          title="Music for the Bebop flight"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen
+        ></iframe>
+      </aside>
+
+      <div id="terrain-video-projection" aria-hidden="true">
+        <div id="terrain-youtube-player"></div>
+      </div>
+
+      <canvas
+        id="overlay-scene"
+        aria-label="Spaceship and effects displayed in front of the projection"
+      ></canvas>
+
+      <aside id="debug" hidden>
+        <strong>Bebop / Mars flight</strong>
+        <span id="debug-speed"></span>
+        <span id="debug-fps"></span>
+        <small>Up/Down speed · Space pause · D debug</small>
+      </aside>
+      <aside id="scene-controls" hidden>
+        <strong>Scene controls</strong>
+        <fieldset>
+          <legend>Terrain rotation</legend>
+          <label>X <input type="range" min="-45" max="45" step="0.5" data-config="terrainRotationX"><output></output></label>
+          <label>Y <input type="range" min="-90" max="90" step="0.5" data-config="terrainRotationY"><output></output></label>
+          <label>Z <input type="range" min="-45" max="45" step="0.5" data-config="terrainRotationZ"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Terrain position</legend>
+          <label>X <input type="range" min="-1000" max="1000" step="5" data-config="terrainPositionX"><output></output></label>
+          <label>Y <input type="range" min="-500" max="500" step="5" data-config="terrainPositionY"><output></output></label>
+          <label>Z <input type="range" min="-1000" max="1000" step="5" data-config="terrainPositionZ"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Texture tiling</legend>
+          <label>X <input type="range" min="0.25" max="12" step="0.25" data-config="terrainTextureRepeatX"><output></output></label>
+          <label>Y <input type="range" min="0.25" max="8" step="0.25" data-config="terrainTextureRepeatY"><output></output></label>
+          <label>U <input type="range" min="-2" max="2" step="0.01" data-config="terrainTextureOffsetX"><output></output></label>
+          <label>V <input type="range" min="-2" max="2" step="0.01" data-config="terrainTextureOffsetY"><output></output></label>
+          <small>Alternating repetitions are mirrored automatically.</small>
+        </fieldset>
+        <fieldset>
+          <legend>Basin layer</legend>
+          <label>A <input type="checkbox" data-config="terrainDetailEnabled"><output></output></label>
+          <label>M
+            <select data-config="terrainDetailBlendMode">
+              <option value="normal">Normal</option>
+              <option value="multiply">Multiply</option>
+              <option value="subtract">Subtract</option>
+            </select>
+            <output></output>
+          </label>
+          <label>C <input type="color" data-config="terrainDetailColor"><output></output></label>
+          <label>O <input type="range" min="0" max="1" step="0.01" data-config="terrainDetailOpacity"><output></output></label>
+          <label>S <input type="range" min="0.5" max="20" step="0.25" data-config="terrainDetailScale"><output></output></label>
+          <label>T <input type="range" min="0" max="0.95" step="0.01" data-config="terrainDetailThreshold"><output></output></label>
+          <label>K <input type="range" min="0.25" max="6" step="0.05" data-config="terrainDetailContrast"><output></output></label>
+          <label>D <input type="range" min="0" max="100" step="1" data-config="terrainDetailSeed"><output></output></label>
+          <label>X <input type="range" min="0.25" max="8" step="0.25" data-config="terrainDetailRepeatX"><output></output></label>
+          <label>Y <input type="range" min="0.25" max="8" step="0.25" data-config="terrainDetailRepeatY"><output></output></label>
+          <label>U <input type="range" min="-2" max="2" step="0.01" data-config="terrainDetailOffsetX"><output></output></label>
+          <label>V <input type="range" min="-2" max="2" step="0.01" data-config="terrainDetailOffsetY"><output></output></label>
+          <small>
+            A: enable · M: blend · O: opacity · S: scale ·
+            T: visible amount · K: contrast · D: seed ·
+            X/Y: tiling · U/V: offset
+          </small>
+        </fieldset>
+        <fieldset>
+          <legend>Terrain relief</legend>
+          <label>M
+            <select data-config="terrainNoiseMode">
+              <option value="fbm">Smooth FBM</option>
+              <option value="ridged">Ridges</option>
+              <option value="billow">Hills</option>
+              <option value="dunes">Dunes</option>
+              <option value="waves">Waves</option>
+              <option value="terraces">Terraces</option>
+            </select>
+            <output></output>
+          </label>
+          <label>H <input type="range" min="0" max="20" step="0.25" data-config="terrainElevation"><output></output></label>
+          <label>B <input type="range" min="-5" max="10" step="0.25" data-config="terrainBaseElevation"><output></output></label>
+          <label>N <input type="range" min="0.005" max="0.15" step="0.005" data-config="terrainNoiseScale"><output></output></label>
+          <label>O <input type="range" min="1" max="7" step="1" data-config="terrainNoiseOctaves"><output></output></label>
+          <label>L <input type="range" min="1.1" max="4" step="0.1" data-config="terrainNoiseLacunarity"><output></output></label>
+          <label>G <input type="range" min="0.1" max="0.9" step="0.05" data-config="terrainNoiseGain"><output></output></label>
+          <label>C <input type="range" min="0.25" max="4" step="0.05" data-config="terrainNoiseSharpness"><output></output></label>
+          <label>D <input type="range" min="-1" max="1" step="0.05" data-config="terrainNoiseOffset"><output></output></label>
+          <label>S <input type="range" min="0" max="100" step="1" data-config="terrainNoiseSeed"><output></output></label>
+          <label>E <input type="checkbox" data-config="terrainFadeEdges"><output></output></label>
+          <label>F <input type="range" min="0.1" max="4" step="0.1" data-config="terrainEdgeFadePower"><output></output></label>
+          <small>
+            H: height · B: base · N: scale · O: octaves ·
+            L: lacunarity · G: gain · C: contrast ·
+            D: density · S: seed · E: soften edges ·
+            F: fade strength
+          </small>
+        </fieldset>
+        <fieldset>
+          <legend>Fog 1 · size and position</legend>
+          <label>W <input type="range" min="100" max="5000" step="50" data-config="fogBandWidth"><output></output></label>
+          <label>H <input type="range" min="10" max="500" step="5" data-config="fogBandHeight"><output></output></label>
+          <label>X <input type="range" min="-1000" max="1000" step="5" data-config="fogBandX"><output></output></label>
+          <label>Y <input type="range" min="-500" max="500" step="5" data-config="fogBandY"><output></output></label>
+          <label>Z <input type="range" min="-1500" max="100" step="10" data-config="fogBandZ"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Fog 1 · rotation and color</legend>
+          <label>X <input type="range" min="-45" max="45" step="0.5" data-config="fogBandRotationX"><output></output></label>
+          <label>Y <input type="range" min="-45" max="45" step="0.5" data-config="fogBandRotationY"><output></output></label>
+          <label>Z <input type="range" min="-45" max="45" step="0.5" data-config="fogBandRotationZ"><output></output></label>
+          <label>C <input type="color" data-config="fogBandColor"><output></output></label>
+          <label>O <input type="range" min="0" max="1" step="0.05" data-config="fogBandOpacity"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Fog 2 · size and position</legend>
+          <label>W <input type="range" min="100" max="5000" step="50" data-config="fogBand2Width"><output></output></label>
+          <label>H <input type="range" min="10" max="500" step="5" data-config="fogBand2Height"><output></output></label>
+          <label>X <input type="range" min="-1000" max="1000" step="5" data-config="fogBand2X"><output></output></label>
+          <label>Y <input type="range" min="-500" max="500" step="5" data-config="fogBand2Y"><output></output></label>
+          <label>Z <input type="range" min="-1500" max="100" step="10" data-config="fogBand2Z"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Fog 2 · rotation and color</legend>
+          <label>X <input type="range" min="-45" max="45" step="0.5" data-config="fogBand2RotationX"><output></output></label>
+          <label>Y <input type="range" min="-45" max="45" step="0.5" data-config="fogBand2RotationY"><output></output></label>
+          <label>Z <input type="range" min="-45" max="45" step="0.5" data-config="fogBand2RotationZ"><output></output></label>
+          <label>C <input type="color" data-config="fogBand2Color"><output></output></label>
+          <label>O <input type="range" min="0" max="1" step="0.05" data-config="fogBand2Opacity"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Sky particles</legend>
+          <label>C <input type="color" data-config="skyParticleColor"><output></output></label>
+          <label>O <input type="range" min="0" max="1" step="0.01" data-config="skyParticleOpacity"><output></output></label>
+          <label>S <input type="range" min="0.01" max="0.6" step="0.01" data-config="skyParticleSize"><output></output></label>
+          <label>V <input type="range" min="0.01" max="0.6" step="0.01" data-config="skyParticleSpeed"><output></output></label>
+          <small>S: size · V: speed</small>
+        </fieldset>
+        <fieldset>
+          <legend>Particle origin</legend>
+          <label>X <input type="range" min="-2" max="2" step="0.01" data-config="skyParticleOriginX"><output></output></label>
+          <label>Y <input type="range" min="-1" max="1" step="0.01" data-config="skyParticleOriginY"><output></output></label>
+          <label>Z <input type="range" min="-15" max="-3" step="0.1" data-config="skyParticleOriginZ"><output></output></label>
+          <small>A more negative Z places the spawn point visually farther away.</small>
+        </fieldset>
+        <fieldset>
+          <legend>Spawn area</legend>
+          <label>W <input type="range" min="0" max="4" step="0.05" data-config="skyParticleSpawnWidth"><output></output></label>
+          <label>H <input type="range" min="0" max="2" step="0.05" data-config="skyParticleSpawnHeight"><output></output></label>
+          <small>W: emitter width · H: emitter height</small>
+        </fieldset>
+        <fieldset>
+          <legend>Particle direction</legend>
+          <label>X <input type="range" min="-3" max="3" step="0.01" data-config="skyParticleDirectionX"><output></output></label>
+          <label>Y <input type="range" min="-3" max="3" step="0.01" data-config="skyParticleDirectionY"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Particle spread</legend>
+          <label>X <input type="range" min="0" max="5" step="0.05" data-config="skyParticleSpreadX"><output></output></label>
+          <label>Y <input type="range" min="0" max="3" step="0.05" data-config="skyParticleSpreadY"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Falling particles</legend>
+          <label>C <input type="color" data-config="fallingParticleColor"><output></output></label>
+          <label>O <input type="range" min="0" max="1" step="0.01" data-config="fallingParticleOpacity"><output></output></label>
+          <label>S <input type="range" min="0.01" max="0.6" step="0.01" data-config="fallingParticleSize"><output></output></label>
+          <label>V <input type="range" min="0.01" max="0.6" step="0.01" data-config="fallingParticleSpeed"><output></output></label>
+          <small>S: size · V: speed</small>
+        </fieldset>
+        <fieldset>
+          <legend>Falling particle origin</legend>
+          <label>X <input type="range" min="-2" max="2" step="0.01" data-config="fallingParticleOriginX"><output></output></label>
+          <label>Y <input type="range" min="-1" max="1" step="0.01" data-config="fallingParticleOriginY"><output></output></label>
+          <label>Z <input type="range" min="-15" max="-3" step="0.1" data-config="fallingParticleOriginZ"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Falling particle area</legend>
+          <label>W <input type="range" min="0" max="4" step="0.05" data-config="fallingParticleSpawnWidth"><output></output></label>
+          <label>H <input type="range" min="0" max="2" step="0.05" data-config="fallingParticleSpawnHeight"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Falling particle direction</legend>
+          <label>X <input type="range" min="-3" max="3" step="0.01" data-config="fallingParticleDirectionX"><output></output></label>
+          <label>Y <input type="range" min="-3" max="3" step="0.01" data-config="fallingParticleDirectionY"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Falling particle spread</legend>
+          <label>X <input type="range" min="0" max="5" step="0.05" data-config="fallingParticleSpreadX"><output></output></label>
+          <label>Y <input type="range" min="0" max="3" step="0.05" data-config="fallingParticleSpreadY"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>YouTube projection</legend>
+          <label>W <input type="range" min="20" max="120" step="1" data-config="youtubeProjectionWidth"><output></output></label>
+          <label>O <input type="range" min="0.05" max="1" step="0.01" data-config="youtubeProjectionOpacity"><output></output></label>
+          <label>X <input type="range" min="-20" max="120" step="1" data-config="youtubeProjectionX"><output></output></label>
+          <label>Y <input type="range" min="-20" max="120" step="1" data-config="youtubeProjectionY"><output></output></label>
+          <label>P <input type="range" min="200" max="2500" step="25" data-config="youtubeProjectionPerspective"><output></output></label>
+          <label>S <input type="range" min="0.3" max="2" step="0.01" data-config="youtubeProjectionScale"><output></output></label>
+          <label>RX <input type="range" min="0" max="85" step="0.5" data-config="youtubeProjectionRotationX"><output></output></label>
+          <label>RY <input type="range" min="-60" max="60" step="0.5" data-config="youtubeProjectionRotationY"><output></output></label>
+          <label>RZ <input type="range" min="-90" max="90" step="0.5" data-config="youtubeProjectionRotationZ"><output></output></label>
+          <small>
+            W: width · O: opacity · P: perspective · S: scale ·
+            RX/RY/RZ: 3D rotation
+          </small>
+        </fieldset>
+        <fieldset>
+          <legend>Spaceship</legend>
+          <label>S <input type="range" min="0.2" max="1.5" step="0.01" data-config="shipHeight"><output></output></label>
+          <small>S controls the overall spaceship scale.</small>
+        </fieldset>
+        <fieldset>
+          <legend>Engine flares</legend>
+          <label>C <input type="color" data-config="engineFlareColor"><output></output></label>
+          <label>O <input type="range" min="0" max="1" step="0.01" data-config="engineFlareOpacity"><output></output></label>
+          <label>S <input type="range" min="0.01" max="0.5" step="0.01" data-config="engineFlareSize"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Flare 1 · position</legend>
+          <label>X <input type="range" min="-1" max="1" step="0.005" data-config="engineFlare1X"><output></output></label>
+          <label>Y <input type="range" min="-0.6" max="0.6" step="0.005" data-config="engineFlare1Y"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Flare 2 · position</legend>
+          <label>X <input type="range" min="-1" max="1" step="0.005" data-config="engineFlare2X"><output></output></label>
+          <label>Y <input type="range" min="-0.6" max="0.6" step="0.005" data-config="engineFlare2Y"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Flare 3 · position</legend>
+          <label>X <input type="range" min="-1" max="1" step="0.005" data-config="engineFlare3X"><output></output></label>
+          <label>Y <input type="range" min="-0.6" max="0.6" step="0.005" data-config="engineFlare3Y"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Flare 4 · position</legend>
+          <label>X <input type="range" min="-1" max="1" step="0.005" data-config="engineFlare4X"><output></output></label>
+          <label>Y <input type="range" min="-0.6" max="0.6" step="0.005" data-config="engineFlare4Y"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Red light 1 · position</legend>
+          <label>X <input type="range" min="-1" max="1" step="0.005" data-config="navigationLight1X"><output></output></label>
+          <label>Y <input type="range" min="-0.6" max="0.6" step="0.005" data-config="navigationLight1Y"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Red light 2 · position</legend>
+          <label>X <input type="range" min="-1" max="1" step="0.005" data-config="navigationLight2X"><output></output></label>
+          <label>Y <input type="range" min="-0.6" max="0.6" step="0.005" data-config="navigationLight2Y"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Blue light 1 · position</legend>
+          <label>X <input type="range" min="-1" max="1" step="0.005" data-config="navigationLight3X"><output></output></label>
+          <label>Y <input type="range" min="-0.6" max="0.6" step="0.005" data-config="navigationLight3Y"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Blue light 2 · position</legend>
+          <label>X <input type="range" min="-1" max="1" step="0.005" data-config="navigationLight4X"><output></output></label>
+          <label>Y <input type="range" min="-0.6" max="0.6" step="0.005" data-config="navigationLight4Y"><output></output></label>
+        </fieldset>
+        <button id="reset-scene-controls" type="button">Reset values</button>
+      </aside>
+
+      <footer id="site-footer">Created by hav_bs0lll</footer>
+
+      <audio
+        id="engine-sound"
+        src="./assets/engine_sound1_bebop.wav"
+        preload="auto"
+        loop
+        autoplay
+        aria-hidden="true"
+      ></audio>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+    <script src="./youtube-player.js" defer></script>
+    <script src="./engine-sound.js" defer></script>
+  </body>
+</html>
