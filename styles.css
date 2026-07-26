@@ -157,8 +157,8 @@ body {
   pointer-events: none;
   opacity: 0;
   clip-path: polygon(13% 0, 87% 0, 100% 100%, 0 100%);
-  mix-blend-mode: normal;
-  filter: saturate(0.7) sepia(0.22) contrast(1.12);
+  mix-blend-mode: plus-lighter;
+  /* filter: saturate(0.7) sepia(0.22) contrast(1.12); */
   transform:
     translate(-50%, -35%)
     perspective(var(--projection-perspective))
