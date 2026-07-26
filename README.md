@@ -1,5 +1,7 @@
 # Bebop sobre Marte — versión GitHub Pages (planos 2.5D)
 
+![Bebop ship flying over Mars](./picts/screencapture-bonllavier-github-io-cowboy-bebop-ship-over-mars-2026-07-26-02_19_24.png)
+
 Esta versión usa:
 
 - `index.html`
