@@ -305,6 +305,57 @@
           <label>Y <input type="range" min="0" max="3" step="0.05" data-config="fallingParticleSpreadY"><output></output></label>
         </fieldset>
         <fieldset>
+          <legend>Cloud generator</legend>
+          <label>ON <input type="checkbox" data-config="cloudEnabled"><output></output></label>
+          <label>
+            Mode
+            <select data-config="cloudMode">
+              <option value="soft">Soft</option>
+              <option value="dense">Dense</option>
+              <option value="wispy">Wispy</option>
+              <option value="dust">Dust</option>
+            </select>
+            <output></output>
+          </label>
+          <label>C <input type="color" data-config="cloudColor"><output></output></label>
+          <label>O <input type="range" min="0" max="0.8" step="0.01" data-config="cloudOpacity"><output></output></label>
+          <label>F <input type="range" min="0" max="0.75" step="0.05" data-config="cloudFrontRatio"><output></output></label>
+          <small>F controls how many clouds pass in front of the ship.</small>
+        </fieldset>
+        <fieldset>
+          <legend>Cloud shape</legend>
+          <label>G <input type="range" min="1" max="18" step="1" data-config="cloudGroupCount"><output></output></label>
+          <label>L <input type="range" min="3" max="16" step="1" data-config="cloudLobeCount"><output></output></label>
+          <label>MIN <input type="range" min="0.05" max="1.2" step="0.01" data-config="cloudSizeMin"><output></output></label>
+          <label>MAX <input type="range" min="0.05" max="1.6" step="0.01" data-config="cloudSizeMax"><output></output></label>
+          <label>X <input type="range" min="0.3" max="3" step="0.05" data-config="cloudStretch"><output></output></label>
+          <label>S <input type="range" min="0" max="1" step="0.05" data-config="cloudSoftness"><output></output></label>
+          <small>G: groups · L: lobes · X: horizontal stretch · S: softness</small>
+        </fieldset>
+        <fieldset>
+          <legend>Cloud origin and area</legend>
+          <label>X <input type="range" min="-3" max="3" step="0.01" data-config="cloudOriginX"><output></output></label>
+          <label>Y <input type="range" min="-2" max="2" step="0.01" data-config="cloudOriginY"><output></output></label>
+          <label>Z <input type="range" min="-25" max="-3" step="0.1" data-config="cloudOriginZ"><output></output></label>
+          <label>W <input type="range" min="0" max="6" step="0.05" data-config="cloudSpawnWidth"><output></output></label>
+          <label>H <input type="range" min="0" max="4" step="0.05" data-config="cloudSpawnHeight"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Cloud direction and spread</legend>
+          <label>DX <input type="range" min="-4" max="4" step="0.01" data-config="cloudDirectionX"><output></output></label>
+          <label>DY <input type="range" min="-4" max="4" step="0.01" data-config="cloudDirectionY"><output></output></label>
+          <label>SX <input type="range" min="0" max="4" step="0.05" data-config="cloudSpreadX"><output></output></label>
+          <label>SY <input type="range" min="0" max="3" step="0.05" data-config="cloudSpreadY"><output></output></label>
+        </fieldset>
+        <fieldset>
+          <legend>Cloud motion</legend>
+          <label>V <input type="range" min="0.005" max="0.4" step="0.005" data-config="cloudSpeed"><output></output></label>
+          <label>L <input type="range" min="0.5" max="2.5" step="0.05" data-config="cloudLifetime"><output></output></label>
+          <label>T <input type="range" min="0" max="0.8" step="0.01" data-config="cloudTurbulence"><output></output></label>
+          <label>R <input type="range" min="-1" max="1" step="0.01" data-config="cloudRotationSpeed"><output></output></label>
+          <small>V: speed · L: lifetime · T: turbulence · R: rotation speed</small>
+        </fieldset>
+        <fieldset>
           <legend>YouTube projection</legend>
           <label>W <input type="range" min="20" max="120" step="1" data-config="youtubeProjectionWidth"><output></output></label>
           <label>O <input type="range" min="0.05" max="1" step="0.01" data-config="youtubeProjectionOpacity"><output></output></label>
@@ -323,7 +374,9 @@
         <fieldset>
           <legend>Spaceship</legend>
           <label>S <input type="range" min="0.2" max="1.5" step="0.01" data-config="shipHeight"><output></output></label>
+          <label>M <input type="range" min="0.3" max="1.2" step="0.01" data-config="mobilePortraitShipScale"><output></output></label>
           <small>S controls the overall spaceship scale.</small>
+          <small>M only affects mobile portrait mode.</small>
         </fieldset>
         <fieldset>
           <legend>Engine flares</legend>
@@ -375,6 +428,24 @@
       </aside>
 
       <footer id="site-footer">Created by hav_bs0lll</footer>
+
+      <label id="wireframe-control">
+        <input id="wireframe-toggle" type="checkbox" />
+        <span>W</span>
+      </label>
+
+      <label
+        id="youtube-visibility-control"
+        title="Show or hide the YouTube player"
+      >
+        <input
+          id="youtube-visibility-toggle"
+          type="checkbox"
+          aria-label="Show or hide the YouTube player"
+          checked
+        />
+        <span>Y</span>
+      </label>
 
       <audio
         id="engine-sound"

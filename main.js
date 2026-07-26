@@ -28,6 +28,7 @@ const CONFIG = {
   lookAtZ: -320,
 
   shipHeight: 0.74,
+  mobilePortraitShipScale: 0.60,
   engineFlareColor: '#ffffff',
   engineFlareOpacity: 0.72,
   engineFlareSize: 0.22,
@@ -75,6 +76,31 @@ const CONFIG = {
   fallingParticleDirectionY: -2.6,
   fallingParticleSpreadX: 1,
   fallingParticleSpreadY: 0.35,
+
+  cloudEnabled: true,
+  cloudMode: 'dust',
+  cloudGroupCount: 18,
+  cloudLobeCount: 16,
+  cloudColor: '#4e2015',
+  cloudOpacity: 0.17,
+  cloudSizeMin: 0.18,
+  cloudSizeMax: 1.23,
+  cloudStretch: 1.55,
+  cloudSoftness: 1,
+  cloudSpeed: 0.06,
+  cloudLifetime: 1.85,
+  cloudTurbulence: 0.12,
+  cloudRotationSpeed: 0.02,
+  cloudOriginX: 0,
+  cloudOriginY: 0.25,
+  cloudOriginZ: -14,
+  cloudSpawnWidth: 2.8,
+  cloudSpawnHeight: 1.2,
+  cloudDirectionX: -1.22,
+  cloudDirectionY: -0.65,
+  cloudSpreadX: 1.8,
+  cloudSpreadY: 0.35,
+  cloudFrontRatio: 0.75,
 
   // Global position of the terrain group.
   terrainPositionX: -140,
@@ -168,7 +194,7 @@ CONFIG.planeSpacing =
   CONFIG.planeOverlap;
 
 const TERRAIN_FILES = [
-  './assets/mars_tile_01.jpg',
+  './assets/mars_tile_02.jpg',
   // './assets/mars_tile_02.png',
   // './assets/mars_tile_03.png',
 ];
@@ -186,6 +212,10 @@ const sceneControls = document.querySelector('#scene-controls');
 const youtubeProjection =
   document.querySelector(
     '#terrain-video-projection',
+  );
+const wireframeToggle =
+  document.querySelector(
+    '#wireframe-toggle',
   );
 
 if (sceneControls) {
@@ -302,12 +332,16 @@ let lastTime = 0;
 let engineFlareIntensity = 0.7;
 let engineFlareTarget = 0.7;
 let engineFlareFlickerTimer = 0;
+let wireframeEnabled = false;
 
 const planes = [];
 const skyParticles = [];
 const skyParticleMaterials = [];
 const fallingParticles = [];
 const fallingParticleMaterials = [];
+const cloudGroups = [];
+const cloudMaterials = [];
+let cloudTexture = null;
 
 boot().catch((error) => {
   console.error(error);
@@ -379,11 +413,13 @@ async function boot() {
   createShipOverlay(shipTexture);
   createSkyParticles();
   createFallingSpaceParticles();
+  createCloudParticles();
 
   shipReady = true;
 
   applyFogDebugMode();
   setupSceneControls();
+  setupWireframeControl();
   setupEvents();
   resize();
   revealExperienceWhenReady();
@@ -618,8 +654,18 @@ function updateShipControls() {
     return;
   }
 
+  const isMobilePortrait =
+    window.matchMedia(
+      '(max-width: 600px) and (orientation: portrait)',
+    ).matches;
+  const responsiveShipScale =
+    isMobilePortrait
+      ? CONFIG.mobilePortraitShipScale
+      : 1;
+
   shipGroup.scale.setScalar(
-    CONFIG.shipHeight,
+    CONFIG.shipHeight *
+    responsiveShipScale,
   );
 
   const aspect =
@@ -790,6 +836,7 @@ function setupSceneControls() {
       updateTerrainDetailLayers(key);
     } else if (
       key === 'shipHeight' ||
+      key === 'mobilePortraitShipScale' ||
       key.startsWith('engineFlare') ||
       key.startsWith('navigationLight')
     ) {
@@ -802,6 +849,10 @@ function setupSceneControls() {
       key.startsWith('fallingParticle')
     ) {
       updateFallingParticleAppearance();
+    } else if (
+      key.startsWith('cloud')
+    ) {
+      updateCloudControls(key);
     } else if (
       key.startsWith('youtubeProjection')
     ) {
@@ -903,6 +954,9 @@ function createTerrainPlanes() {
     addTerrainDetailLayer(
       plane,
       rank,
+    );
+    addTerrainWireframeLayer(
+      plane,
     );
 
     planes.push(plane);
@@ -1433,7 +1487,8 @@ function updateTerrainDetailLayers(
     }
 
     detailLayer.visible =
-      CONFIG.terrainDetailEnabled;
+      CONFIG.terrainDetailEnabled &&
+      !wireframeEnabled;
     detailLayer.material.color.set(
       CONFIG.terrainDetailColor,
     );
@@ -1458,6 +1513,85 @@ function updateTerrainDetailLayers(
     detailLayer.material.needsUpdate =
       true;
   }
+}
+
+function addTerrainWireframeLayer(
+  plane,
+) {
+  const material =
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.82,
+      depthTest: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+      toneMapped: false,
+      fog: true,
+    });
+  const wireframeLayer =
+    new THREE.Mesh(
+      plane.geometry,
+      material,
+    );
+
+  wireframeLayer.name =
+    'TerrainWireframeLayer';
+  wireframeLayer.renderOrder = 3;
+  wireframeLayer.visible = false;
+  plane.add(wireframeLayer);
+}
+
+function setWireframeMode(enabled) {
+  wireframeEnabled = enabled;
+
+  for (const plane of planes) {
+    plane.material.visible =
+      !enabled;
+
+    const detailLayer =
+      plane.getObjectByName(
+        'TerrainDetailLayer',
+      );
+    const wireframeLayer =
+      plane.getObjectByName(
+        'TerrainWireframeLayer',
+      );
+
+    if (detailLayer) {
+      detailLayer.visible =
+        !enabled &&
+        CONFIG.terrainDetailEnabled;
+    }
+
+    if (wireframeLayer) {
+      wireframeLayer.visible =
+        enabled;
+    }
+  }
+}
+
+function setupWireframeControl() {
+  if (
+    !(
+      wireframeToggle instanceof
+      HTMLInputElement
+    )
+  ) {
+    return;
+  }
+
+  wireframeToggle.addEventListener(
+    'change',
+    () => {
+      setWireframeMode(
+        wireframeToggle.checked,
+      );
+    },
+  );
 }
 
 function createShipOverlay(
@@ -1963,6 +2097,393 @@ function updateFallingParticleAppearance() {
   }
 }
 
+const MAX_CLOUD_GROUPS = 18;
+const MAX_CLOUD_LOBES = 16;
+
+function createCloudTexture() {
+  const size = 128;
+  const canvas =
+    document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+
+  const context =
+    canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error(
+      'The cloud texture could not be created.',
+    );
+  }
+
+  const edge =
+    THREE.MathUtils.lerp(
+      0.42,
+      0.92,
+      CONFIG.cloudSoftness,
+    );
+  const gradient =
+    context.createRadialGradient(
+      size / 2,
+      size / 2,
+      size * 0.03,
+      size / 2,
+      size / 2,
+      size / 2,
+    );
+
+  gradient.addColorStop(
+    0,
+    'rgba(255,255,255,0.94)',
+  );
+  gradient.addColorStop(
+    Math.max(0.08, 1 - edge),
+    'rgba(255,255,255,0.72)',
+  );
+  gradient.addColorStop(
+    Math.min(0.96, 0.45 + edge * 0.42),
+    'rgba(255,255,255,0.12)',
+  );
+  gradient.addColorStop(
+    1,
+    'rgba(255,255,255,0)',
+  );
+
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, size, size);
+
+  const texture =
+    new THREE.CanvasTexture(canvas);
+  texture.colorSpace =
+    THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function getCloudModeSettings() {
+  const settings = {
+    soft: {
+      scatter: 0.72,
+      thickness: 0.7,
+      opacity: 1,
+    },
+    dense: {
+      scatter: 0.52,
+      thickness: 0.9,
+      opacity: 1.35,
+    },
+    wispy: {
+      scatter: 1.25,
+      thickness: 0.38,
+      opacity: 0.72,
+    },
+    dust: {
+      scatter: 0.95,
+      thickness: 0.55,
+      opacity: 0.82,
+    },
+  };
+
+  return (
+    settings[CONFIG.cloudMode] ??
+    settings.soft
+  );
+}
+
+function createCloudParticles() {
+  cloudTexture = createCloudTexture();
+
+  const backMaterial =
+    new THREE.SpriteMaterial({
+      map: cloudTexture,
+      color: CONFIG.cloudColor,
+      transparent: true,
+      opacity: CONFIG.cloudOpacity,
+      depthTest: false,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+      toneMapped: false,
+    });
+  const frontMaterial =
+    backMaterial.clone();
+
+  cloudMaterials.push(
+    backMaterial,
+    frontMaterial,
+  );
+
+  for (
+    let groupIndex = 0;
+    groupIndex < MAX_CLOUD_GROUPS;
+    groupIndex += 1
+  ) {
+    const group = new THREE.Group();
+    group.name =
+      `CloudGroup${groupIndex + 1}`;
+    group.userData.index = groupIndex;
+    group.userData.progress =
+      Math.random();
+    group.userData.speedFactor =
+      0.72 + Math.random() * 0.56;
+
+    for (
+      let lobeIndex = 0;
+      lobeIndex < MAX_CLOUD_LOBES;
+      lobeIndex += 1
+    ) {
+      const lobe =
+        new THREE.Sprite(backMaterial);
+      lobe.name =
+        `CloudLobe${lobeIndex + 1}`;
+      lobe.userData.index = lobeIndex;
+      group.add(lobe);
+    }
+
+    resetCloudGroup(group, false);
+    cloudGroups.push(group);
+    overlayScene.add(group);
+  }
+
+  updateCloudControls('cloudMode');
+}
+
+function resetCloudGroup(
+  group,
+  resetProgress = true,
+) {
+  if (resetProgress) {
+    group.userData.progress = 0;
+  }
+
+  const mode =
+    getCloudModeSettings();
+
+  group.userData.spawnUnitX =
+    Math.random() - 0.5;
+  group.userData.spawnUnitY =
+    Math.random() - 0.5;
+  group.userData.spreadX =
+    Math.random() * 2 - 1;
+  group.userData.spreadY =
+    Math.random() * 2 - 1;
+  group.userData.baseScale =
+    THREE.MathUtils.lerp(
+      CONFIG.cloudSizeMin,
+      CONFIG.cloudSizeMax,
+      Math.random(),
+    );
+  group.userData.phase =
+    Math.random() * Math.PI * 2;
+  group.userData.rotationDirection =
+    Math.random() < 0.5 ? -1 : 1;
+
+  for (const lobe of group.children) {
+    const angle =
+      Math.random() * Math.PI * 2;
+    const radius =
+      Math.pow(Math.random(), 0.62) *
+      mode.scatter;
+    const lobeScale =
+      0.34 + Math.random() * 0.66;
+
+    lobe.position.set(
+      Math.cos(angle) *
+        radius *
+        CONFIG.cloudStretch,
+      Math.sin(angle) *
+        radius *
+        mode.thickness,
+      0,
+    );
+    lobe.scale.set(
+      lobeScale *
+        (0.85 + Math.random() * 0.4),
+      lobeScale,
+      1,
+    );
+    lobe.material.opacity =
+      THREE.MathUtils.clamp(
+        CONFIG.cloudOpacity *
+          mode.opacity,
+        0,
+        1,
+      );
+  }
+}
+
+function updateCloudParticles(
+  delta,
+  time,
+) {
+  const activeCount =
+    Math.min(
+      MAX_CLOUD_GROUPS,
+      Math.round(CONFIG.cloudGroupCount),
+    );
+
+  for (const group of cloudGroups) {
+    if (!group.visible) {
+      continue;
+    }
+
+    group.userData.progress +=
+      delta *
+      CONFIG.cloudSpeed *
+      group.userData.speedFactor;
+
+    if (
+      group.userData.progress >=
+      CONFIG.cloudLifetime
+    ) {
+      resetCloudGroup(group);
+    }
+
+    const progress =
+      group.userData.progress;
+    const depthExponent =
+      THREE.MathUtils.clamp(
+        Math.abs(CONFIG.cloudOriginZ) *
+          0.16,
+        0.7,
+        3,
+      );
+    const perspective =
+      Math.pow(
+        progress,
+        depthExponent,
+      );
+    const turbulence =
+      Math.sin(
+        time * 0.8 +
+          group.userData.phase,
+      ) *
+      CONFIG.cloudTurbulence *
+      perspective;
+
+    group.position.x =
+      CONFIG.cloudOriginX +
+      group.userData.spawnUnitX *
+        CONFIG.cloudSpawnWidth +
+      (
+        CONFIG.cloudDirectionX +
+        group.userData.spreadX *
+          CONFIG.cloudSpreadX
+      ) *
+        perspective +
+      turbulence;
+
+    group.position.y =
+      CONFIG.cloudOriginY +
+      group.userData.spawnUnitY *
+        CONFIG.cloudSpawnHeight +
+      (
+        CONFIG.cloudDirectionY +
+        group.userData.spreadY *
+          CONFIG.cloudSpreadY
+      ) *
+        perspective +
+      turbulence * 0.35;
+
+    const scale =
+      THREE.MathUtils.lerp(
+        0.012,
+        group.userData.baseScale,
+        Math.min(perspective, 1.35),
+      );
+    group.scale.set(scale, scale, 1);
+    group.rotation.z +=
+      delta *
+      CONFIG.cloudRotationSpeed *
+      group.userData.rotationDirection;
+
+    group.userData.activeCount =
+      activeCount;
+  }
+}
+
+function updateCloudControls(changedKey) {
+  if (changedKey === 'cloudSoftness') {
+    const previousTexture =
+      cloudTexture;
+    cloudTexture =
+      createCloudTexture();
+
+    for (const material of cloudMaterials) {
+      material.map = cloudTexture;
+      material.needsUpdate = true;
+    }
+
+    previousTexture?.dispose();
+  }
+
+  const activeGroups =
+    Math.min(
+      MAX_CLOUD_GROUPS,
+      Math.round(CONFIG.cloudGroupCount),
+    );
+  const activeLobes =
+    Math.min(
+      MAX_CLOUD_LOBES,
+      Math.round(CONFIG.cloudLobeCount),
+    );
+  const frontStart =
+    Math.floor(
+      activeGroups *
+        (1 - CONFIG.cloudFrontRatio),
+    );
+  const mode =
+    getCloudModeSettings();
+
+  for (const material of cloudMaterials) {
+    material.color.set(CONFIG.cloudColor);
+    material.opacity =
+      THREE.MathUtils.clamp(
+        CONFIG.cloudOpacity *
+          mode.opacity,
+        0,
+        1,
+      );
+  }
+
+  for (
+    let index = 0;
+    index < cloudGroups.length;
+    index += 1
+  ) {
+    const group = cloudGroups[index];
+    const inFront =
+      index >= frontStart &&
+      index < activeGroups;
+
+    group.visible =
+      !FOG_DEBUG_ONLY &&
+      CONFIG.cloudEnabled &&
+      index < activeGroups;
+
+    for (const lobe of group.children) {
+      lobe.visible =
+        lobe.userData.index <
+        activeLobes;
+      lobe.material =
+        inFront
+          ? cloudMaterials[1]
+          : cloudMaterials[0];
+      lobe.renderOrder =
+        inFront ? 32 : 7;
+    }
+
+    if (
+      changedKey === 'cloudMode' ||
+      changedKey === 'cloudLobeCount' ||
+      changedKey === 'cloudStretch' ||
+      changedKey === 'cloudSizeMin' ||
+      changedKey === 'cloudSizeMax'
+    ) {
+      resetCloudGroup(group, false);
+    }
+  }
+}
+
 function createStars() {
   const rng =
     mulberry32(
@@ -2053,6 +2574,10 @@ function animate(timeMs) {
     updateSkyParticles(delta);
     updateFallingSpaceParticles(
       delta,
+    );
+    updateCloudParticles(
+      delta,
+      time,
     );
   }
 
@@ -2530,6 +3055,8 @@ function resize() {
 
   overlayCamera
     .updateProjectionMatrix();
+
+  updateShipControls();
 }
 
 function setupEvents() {

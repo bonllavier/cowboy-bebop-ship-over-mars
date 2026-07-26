@@ -4,8 +4,19 @@
     document.querySelector(
       '#terrain-video-projection',
     );
+  const playerElement =
+    document.querySelector(
+      '#youtube-player',
+    );
+  const visibilityToggle =
+    document.querySelector(
+      '#youtube-visibility-toggle',
+    );
 
-  if (!projectionElement) {
+  if (
+    !projectionElement ||
+    !playerElement
+  ) {
     return;
   }
 
@@ -13,6 +24,10 @@
   let projectionPlayer = null;
   let projectionReady = false;
   let syncTimer = null;
+  const mobileProjectionQuery =
+    window.matchMedia(
+      '(max-width: 600px)',
+    );
 
   function hideProjection() {
     projectionElement.classList.remove(
@@ -59,6 +74,14 @@
   }
 
   function showProjection() {
+    if (
+      mobileProjectionQuery.matches ||
+      visibilityToggle?.checked === false
+    ) {
+      hideProjection();
+      return;
+    }
+
     if (
       !mainPlayer ||
       !projectionPlayer ||
@@ -154,4 +177,37 @@
     'https://www.youtube.com/iframe_api';
   apiScript.async = true;
   document.head.append(apiScript);
+
+  visibilityToggle?.addEventListener(
+    'change',
+    () => {
+      const visible =
+        visibilityToggle.checked;
+
+      playerElement.classList.toggle(
+        'is-hidden',
+        !visible,
+      );
+
+      if (!visible) {
+        hideProjection();
+        mainPlayer?.pauseVideo();
+      }
+    },
+  );
+
+  mobileProjectionQuery.addEventListener(
+    'change',
+    () => {
+      if (mobileProjectionQuery.matches) {
+        hideProjection();
+      } else if (
+        mainPlayer &&
+        mainPlayer.getPlayerState() ===
+          window.YT?.PlayerState?.PLAYING
+      ) {
+        showProjection();
+      }
+    },
+  );
 })();
