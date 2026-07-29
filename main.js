@@ -119,7 +119,7 @@ const CONFIG = {
   // Simulated visual curvature of Mars.
   // Distant planes progressively descend.
   planetCurveStrength: 0.000025,
-  terrainElevation: 4,
+  terrainElevation: 6,
   terrainNoiseScale: 0.035,
   terrainNoiseMode: 'billow',
   terrainNoiseOctaves: 4,
@@ -970,8 +970,8 @@ function createTerrainGeometry(seed) {
     new THREE.PlaneGeometry(
       CONFIG.planeWidth,
       CONFIG.planeLength,
-      24,
-      36,
+      64,
+      96,
     );
 
   geometry.rotateX(
